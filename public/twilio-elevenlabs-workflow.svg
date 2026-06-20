@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="960" viewBox="0 0 1440 960" role="img" aria-labelledby="title desc">
+  <title id="title">Twilio to ElevenLabs voice agent workflow</title>
+  <desc id="desc">Reference workflow diagram for the Nomos dashboard, Express backend, Twilio outbound call, ElevenLabs voice agent, MCP tools, and run storage.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L12,7 L2,12 Z" fill="#23714f" />
+    </marker>
+    <style>
+      .bg { fill: #f6f7f4; }
+      .lane { fill: #ffffff; stroke: #dfe5da; stroke-width: 2; }
+      .box { fill: #ffffff; stroke: #23714f; stroke-width: 3; rx: 12; }
+      .box-alt { fill: #f1f4ee; stroke: #2b5f95; stroke-width: 3; rx: 12; }
+      .box-warn { fill: #fff9ed; stroke: #9b6a1d; stroke-width: 3; rx: 12; }
+      .text { fill: #171a16; font-family: Inter, Segoe UI, Arial, sans-serif; font-size: 24px; font-weight: 700; }
+      .small { fill: #3d4439; font-family: Inter, Segoe UI, Arial, sans-serif; font-size: 17px; font-weight: 500; }
+      .muted { fill: #687163; font-family: Inter, Segoe UI, Arial, sans-serif; font-size: 16px; font-weight: 500; }
+      .label { fill: #23714f; font-family: Inter, Segoe UI, Arial, sans-serif; font-size: 15px; font-weight: 800; text-transform: uppercase; }
+      .arrow { fill: none; stroke: #23714f; stroke-width: 4; marker-end: url(#arrow); }
+      .arrow-blue { fill: none; stroke: #2b5f95; stroke-width: 4; marker-end: url(#arrow); }
+      .arrow-warn { fill: none; stroke: #9b6a1d; stroke-width: 4; marker-end: url(#arrow); stroke-dasharray: 10 9; }
+      .badge { fill: #f1f4ee; stroke: #dfe5da; stroke-width: 2; rx: 9; }
+      .mono { fill: #171a16; font-family: Consolas, Menlo, monospace; font-size: 16px; font-weight: 600; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1440" height="960" />
+
+  <text x="70" y="72" class="text" style="font-size:38px">Nomos MVP: Twilio outbound call to ElevenLabs voice agent</text>
+  <text x="72" y="108" class="muted">Twilio owns the phone call. Express returns TwiML. ElevenLabs is the live voice brain. MCP tools store the result.</text>
+
+  <rect x="50" y="145" width="1340" height="235" class="lane" rx="18" />
+  <text x="80" y="182" class="label">1. Start call from dashboard</text>
+
+  <rect x="90" y="220" width="250" height="105" class="box" />
+  <text x="120" y="260" class="text">Dashboard</text>
+  <text x="120" y="291" class="small">User selects CASE-A/B/C</text>
+  <text x="120" y="316" class="small">Clicks Start Twilio call</text>
+
+  <path d="M345 273 H470" class="arrow" />
+  <text x="370" y="248" class="mono">POST /api/calls/start</text>
+
+  <rect x="485" y="220" width="300" height="105" class="box" />
+  <text x="515" y="260" class="text">Express backend</text>
+  <text x="515" y="291" class="small">Creates run_id</text>
+  <text x="515" y="316" class="small">Calls Twilio API</text>
+
+  <path d="M795 273 H925" class="arrow" />
+  <text x="815" y="248" class="mono">client.calls.create()</text>
+
+  <rect x="940" y="220" width="350" height="105" class="box-alt" />
+  <text x="970" y="260" class="text">Twilio Programmable Voice</text>
+  <text x="970" y="291" class="small">from: TWILIO_FROM_NUMBER</text>
+  <text x="970" y="316" class="small">to: NOMOS_PRACTICE_CLERK_NUMBER</text>
+
+  <rect x="50" y="410" width="1340" height="270" class="lane" rx="18" />
+  <text x="80" y="447" class="label">2. Twilio asks your app what to do, then streams audio to ElevenLabs</text>
+
+  <rect x="90" y="505" width="290" height="105" class="box-alt" />
+  <text x="120" y="545" class="text">Practice clerk phone</text>
+  <text x="120" y="576" class="small">IVR menu answers first</text>
+  <text x="120" y="601" class="small">Then a German clerk answers</text>
+
+  <path d="M945 365 C945 430 780 425 710 495" class="arrow-blue" />
+  <text x="765" y="418" class="mono">GET/POST /twilio/voice</text>
+
+  <rect x="525" y="505" width="300" height="105" class="box" />
+  <text x="555" y="545" class="text">/twilio/voice</text>
+  <text x="555" y="576" class="small">Returns TwiML</text>
+  <text x="555" y="601" class="small">&lt;Connect&gt;&lt;Stream&gt;</text>
+
+  <path d="M520 557 H390" class="arrow-blue" />
+  <text x="410" y="532" class="mono">Outbound call leg</text>
+
+  <path d="M830 557 H995" class="arrow" />
+  <text x="850" y="532" class="mono">wss media stream</text>
+
+  <rect x="1010" y="490" width="300" height="135" class="box" />
+  <text x="1040" y="530" class="text">ElevenLabs agent</text>
+  <text x="1040" y="561" class="small">Listens and speaks German</text>
+  <text x="1040" y="586" class="small">Sends DTMF 1 or 2</text>
+  <text x="1040" y="611" class="small">Reads numbers digit by digit</text>
+
+  <rect x="560" y="625" width="230" height="34" class="badge" />
+  <text x="575" y="648" class="mono">run_id + case_id as parameters</text>
+
+  <rect x="50" y="710" width="1340" height="180" class="lane" rx="18" />
+  <text x="80" y="747" class="label">3. Agent writes structured outcome back to your app</text>
+
+  <rect x="105" y="790" width="260" height="70" class="box" />
+  <text x="135" y="833" class="text">MCP tools</text>
+
+  <path d="M1005 625 C915 735 520 760 375 820" class="arrow-warn" />
+  <text x="600" y="754" class="mono">POST /mcp/tools/call</text>
+
+  <rect x="455" y="790" width="290" height="70" class="box-warn" />
+  <text x="485" y="818" class="small">case.update_malo</text>
+  <text x="485" y="843" class="small">case.complete_clearing</text>
+
+  <path d="M750 825 H880" class="arrow-warn" />
+
+  <rect x="895" y="790" width="240" height="70" class="box-warn" />
+  <text x="925" y="818" class="small">signup next step</text>
+  <text x="925" y="843" class="small">or customer email</text>
+
+  <path d="M1140 825 H1240" class="arrow" />
+
+  <rect x="1255" y="790" width="105" height="70" class="box" />
+  <text x="1278" y="818" class="small">Run</text>
+  <text x="1278" y="843" class="small">JSON</text>
+
+  <rect x="75" y="910" width="1290" height="30" fill="none" />
+  <text x="75" y="930" class="muted">Key mental model: do not redirect a Twilio number to an ElevenLabs number. Twilio places the call, your app returns TwiML, and Twilio streams audio to the ElevenLabs WebSocket.</text>
+</svg>

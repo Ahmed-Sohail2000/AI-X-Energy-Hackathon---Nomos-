@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nomos Voice Agent</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-nav">
+      <a class="brand" href="#top" aria-label="Nomos Voice Agent">
+        <span></span>
+        Nomos Voice Agent
+      </a>
+      <nav aria-label="Page">
+        <a href="#flow">Flow</a>
+        <a href="#cases">Cases</a>
+        <a href="#console">Console</a>
+      </nav>
+      <button data-scroll-console class="quiet" type="button">Open console</button>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">AI-native clearing calls</p>
+          <h1 id="hero-title">Twilio call. ElevenLabs agent. Structured energy-market result.</h1>
+          <p>
+            A German voice agent handles IVR, verifies MaLo data, captures the reason, and writes the next action.
+          </p>
+          <div class="hero-actions">
+            <button data-scroll-console type="button">Run a case</button>
+            <a href="/twilio-elevenlabs-workflow.svg" target="_blank" rel="noreferrer">Open diagram</a>
+          </div>
+        </div>
+        <div class="hero-visual" aria-label="Live workflow preview">
+          <div class="signal-strip">
+            <span>Dashboard</span>
+            <span>Express</span>
+            <span>Twilio</span>
+            <span>ElevenLabs</span>
+            <span>MCP</span>
+          </div>
+          <div class="call-map">
+            <article>
+              <strong>Start</strong>
+              <span>select case</span>
+            </article>
+            <article>
+              <strong>Dial</strong>
+              <span>practice number</span>
+            </article>
+            <article>
+              <strong>Stream</strong>
+              <span>voice agent</span>
+            </article>
+            <article>
+              <strong>Clear</strong>
+              <span>JSON outcome</span>
+            </article>
+          </div>
+          <div class="voice-panel">
+            <span>Agent quality</span>
+            <strong>German, concise, digit-by-digit readback, human-grade turn taking.</strong>
+          </div>
+        </div>
+      </section>
+
+      <section id="flow" class="section">
+        <div class="section-head">
+          <p class="eyebrow">Integration flow</p>
+          <h2>One call path, no hidden handoff.</h2>
+        </div>
+        <div class="process-grid" aria-label="Twilio ElevenLabs process">
+          <article>
+            <span>01</span>
+            <strong>Dashboard</strong>
+            <p>Creates a run and sends the selected case to the backend.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <strong>Twilio</strong>
+            <p>Dials the practice clerk number with the configured caller ID.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <strong>TwiML stream</strong>
+            <p>Your app returns Connect Stream with run and case parameters.</p>
+          </article>
+          <article>
+            <span>04</span>
+            <strong>ElevenLabs</strong>
+            <p>The voice agent handles IVR, speaks German, and verifies details.</p>
+          </article>
+          <article>
+            <span>05</span>
+            <strong>MCP tools</strong>
+            <p>Outcome, corrected MaLo, and next action are saved.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section diagram-section" aria-label="Full integration diagram">
+        <img src="/twilio-elevenlabs-workflow.svg" alt="Twilio outbound call to ElevenLabs voice agent workflow" />
+      </section>
+
+      <section id="cases" class="section">
+        <div class="section-head">
+          <p class="eyebrow">Use cases</p>
+          <h2>Three clearing patterns.</h2>
+        </div>
+        <div class="use-case-grid">
+          <button data-landing-case="CASE-A" type="button">
+            <span>CASE-A</span>
+            <strong>Registration bounced</strong>
+            <small>Find real reason and next step.</small>
+          </button>
+          <button data-landing-case="CASE-B" type="button">
+            <span>CASE-B</span>
+            <strong>Silent registration</strong>
+            <small>Confirm processing and reference number.</small>
+          </button>
+          <button data-landing-case="CASE-C" type="button">
+            <span>CASE-C</span>
+            <strong>Wrong MaLo</strong>
+            <small>Get corrected MaLo and read it back.</small>
+          </button>
+        </div>
+      </section>
+
+      <section class="section stack-section">
+        <div class="section-head">
+          <p class="eyebrow">MVP stack</p>
+          <h2>Lean stack for live calls.</h2>
+        </div>
+        <div class="stack-grid">
+          <article><strong>Express + TypeScript</strong><span>API, TwiML, run storage</span></article>
+          <article><strong>Twilio Voice</strong><span>Outbound dial and status callbacks</span></article>
+          <article><strong>ElevenLabs</strong><span>German voice agent and call reasoning</span></article>
+          <article><strong>MCP-style tools</strong><span>Structured actions and outcome JSON</span></article>
+        </div>
+      </section>
+
+      <section id="console" class="console-shell" aria-label="Operator console">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Operator console</p>
+            <h2>Run and verify a clearing call</h2>
+          </div>
+          <div class="header-actions">
+            <span id="health" class="pill">Checking</span>
+            <button id="refresh" class="quiet" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <nav class="steps" aria-label="Workflow">
+          <button data-step="cases" class="active" type="button">1 Cases</button>
+          <button data-step="setup" type="button">2 Setup</button>
+          <button data-step="call" type="button">3 Call</button>
+          <button data-step="review" type="button">4 Review</button>
+        </nav>
+
+        <section class="summary" aria-label="Summary">
+          <article>
+            <span>Cases</span>
+            <strong id="metric-cases">0</strong>
+          </article>
+          <article>
+            <span>Open</span>
+            <strong id="metric-open">0</strong>
+          </article>
+          <article>
+            <span>Done</span>
+            <strong id="metric-completed">0</strong>
+          </article>
+          <article>
+            <span>Mode</span>
+            <strong id="metric-mode">Mock</strong>
+          </article>
+        </section>
+
+        <section id="page" class="page" aria-live="polite"></section>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
