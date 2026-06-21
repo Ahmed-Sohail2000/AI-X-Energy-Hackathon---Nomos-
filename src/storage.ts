@@ -51,40 +51,12 @@ export async function listRuns(): Promise<RunRecord[]> {
   return runs.sort((a, b) => b.started_at.localeCompare(a.started_at));
 }
 
-export async function latestPendingInboundRun(): Promise<RunRecord | undefined> {
-  const runs = await listRuns();
-  return runs.find(
-    (run) =>
-      run.status === "queued" &&
-      run.events.some((event) => event.event_type === "call.inbound_prepared")
-  );
-}
-
 export async function appendEvent(runId: string, event: Omit<CallEvent, "at">): Promise<RunRecord> {
   const run = await readRun(runId);
   run.events.push({ at: new Date().toISOString(), ...event });
-  if (event.event_type === "call.connected") {
+  if (event.event_type === "voice_agent.session_started" || event.event_type === "voice_agent.session_prepared") {
     run.status = "in_progress";
   }
-  if (event.event_type === "twilio.status" && !run.outcome) {
-    const status = twilioCallStatus(event.payload);
-    if (status === "initiated" || status === "ringing") {
-      run.status = "calling";
-    }
-    if (status === "answered" || status === "in-progress") {
-      run.status = "in_progress";
-    }
-    if (status === "busy" || status === "failed" || status === "no-answer" || status === "canceled") {
-      run.status = "failed";
-    }
-  }
-  return saveRun(run);
-}
-
-export async function attachTwilioSid(runId: string, sid: string): Promise<RunRecord> {
-  const run = await readRun(runId);
-  run.twilio_call_sid = sid;
-  run.status = "calling";
   return saveRun(run);
 }
 
@@ -98,12 +70,4 @@ export async function completeRun(runId: string, outcome: ClearingOutcome): Prom
     payload: outcome
   });
   return saveRun(run);
-}
-
-function twilioCallStatus(payload: unknown): string | undefined {
-  if (!payload || typeof payload !== "object") {
-    return undefined;
-  }
-  const value = (payload as Record<string, unknown>).CallStatus;
-  return typeof value === "string" ? value.toLowerCase() : undefined;
 }

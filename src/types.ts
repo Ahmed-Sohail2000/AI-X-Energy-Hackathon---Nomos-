@@ -44,7 +44,6 @@ export type RunRecord = {
   run_id: string;
   case_id: string;
   status: CaseStatus;
-  twilio_call_sid?: string;
   started_at: string;
   updated_at: string;
   events: CallEvent[];

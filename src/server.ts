@@ -11,15 +11,7 @@ import {
   buildElevenLabsSkills
 } from "./agentPrompt.js";
 import { callTool, toolDefinitions } from "./mcpTools.js";
-import {
-  appendEvent,
-  attachTwilioSid,
-  createRun,
-  latestPendingInboundRun,
-  listRuns,
-  readRun
-} from "./storage.js";
-import { startOutboundCall } from "./twilioClient.js";
+import { appendEvent, createRun, listRuns, readRun } from "./storage.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -53,51 +45,32 @@ app.get("/api/runs/:runId", async (req, res, next) => {
   }
 });
 
-app.post("/api/calls/start", async (req, res, next) => {
+app.post("/api/voice-agent/session", async (req, res, next) => {
   try {
     const body = z.object({ case_id: z.string() }).parse(req.body);
     const caseFile = getCase(body.case_id);
-    const run = await createRun(caseFile.id);
-    const target = process.env.NOMOS_PRACTICE_CLERK_NUMBER;
-
-    if (!target || !process.env.TWILIO_ACCOUNT_SID) {
-      await appendEvent(run.run_id, {
-        event_type: "call.mock_created",
-        payload: {
-          reason: "Twilio env vars are not fully configured.",
-          dynamic_variables: buildDynamicVariables(caseFile)
-        }
-      });
-      res.json({
-        mode: "mock",
-        run,
-        agent_instructions: buildAgentInstructions(caseFile)
-      });
-      return;
+    if (!process.env.ELEVENLABS_AGENT_ID) {
+      throw new Error("ELEVENLABS_AGENT_ID is required for the embedded voice agent.");
     }
-
-    const sid = await startOutboundCall({ caseFile, runId: run.run_id, to: target });
-    const updated = await attachTwilioSid(run.run_id, sid);
-    res.json({ mode: "twilio", run: updated });
-  } catch (error) {
-    next(error);
-  }
-});
-
-app.post("/api/calls/prepare-inbound", async (req, res, next) => {
-  try {
-    const body = z.object({ case_id: z.string() }).parse(req.body);
-    const caseFile = getCase(body.case_id);
     const run = await createRun(caseFile.id);
+    const dynamicVariables = {
+      ...buildDynamicVariables(caseFile),
+      run_id: run.run_id
+    };
     const updated = await appendEvent(run.run_id, {
-      event_type: "call.inbound_prepared",
+      event_type: "voice_agent.session_prepared",
       payload: {
-        case_id: caseFile.id,
-        twilio_number: process.env.TWILIO_FROM_NUMBER ?? "not configured",
-        next_step: "Call the Twilio number from your phone. Twilio will connect this prepared run to ElevenLabs."
+        agent_id: process.env.ELEVENLABS_AGENT_ID,
+        dynamic_variables: dynamicVariables
       }
     });
-    res.json({ mode: "inbound", run: updated, call_number: process.env.TWILIO_FROM_NUMBER ?? null });
+    res.json({
+      mode: "elevenlabs",
+      run: updated,
+      agent_id: process.env.ELEVENLABS_AGENT_ID,
+      dynamic_variables: dynamicVariables,
+      agent_instructions: buildAgentInstructions(caseFile)
+    });
   } catch (error) {
     next(error);
   }
@@ -135,80 +108,6 @@ app.post("/mcp/tools/call", async (req, res, next) => {
   }
 });
 
-app.post("/twilio/status", async (req, res, next) => {
-  try {
-    await appendEvent(String(req.query.run_id), {
-      event_type: "twilio.status",
-      payload: req.body
-    });
-    res.sendStatus(204);
-  } catch (error) {
-    next(error);
-  }
-});
-
-app.post("/twilio/voice", async (req, res, next) => {
-  try {
-    const runId = String(req.query.run_id);
-    const caseFile = getCase(String(req.query.case_id));
-    await appendEvent(runId, {
-      event_type: "call.connected",
-      payload: { case_id: caseFile.id, twilio_body: req.body }
-    });
-
-    const response = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say language="de-DE">Nomos Klaerfall Agent wird verbunden.</Say>
-  <Connect>
-    <Stream url="${streamUrl(runId, caseFile.id)}">
-      <Parameter name="run_id" value="${runId}" />
-      <Parameter name="case_id" value="${caseFile.id}" />
-    </Stream>
-  </Connect>
-</Response>`;
-    res.type("text/xml").send(response);
-  } catch (error) {
-    next(error);
-  }
-});
-
-app.post("/twilio/inbound", async (req, res, next) => {
-  try {
-    const run = await latestPendingInboundRun();
-    if (!run) {
-      res.type("text/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say language="de-DE">Kein vorbereiteter Nomos Testlauf gefunden. Bitte zuerst im Dashboard einen Inbound Test vorbereiten.</Say>
-  <Hangup />
-</Response>`);
-      return;
-    }
-
-    const caseFile = getCase(run.case_id);
-    if (typeof req.body.CallSid === "string") {
-      await attachTwilioSid(run.run_id, req.body.CallSid);
-    }
-    await appendEvent(run.run_id, {
-      event_type: "call.connected",
-      payload: { case_id: caseFile.id, direction: "inbound", twilio_body: req.body }
-    });
-
-    res.type("text/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say language="de-DE">Nomos Klaerfall Agent wird verbunden.</Say>
-  <Connect>
-    <Stream url="${streamUrl(run.run_id, caseFile.id)}">
-      <Parameter name="run_id" value="${run.run_id}" />
-      <Parameter name="case_id" value="${caseFile.id}" />
-      <Parameter name="call_direction" value="inbound" />
-    </Stream>
-  </Connect>
-</Response>`);
-  } catch (error) {
-    next(error);
-  }
-});
-
 app.get("/api/agent-config/:caseId", (req, res, next) => {
   try {
     const caseFile = getCase(req.params.caseId);
@@ -229,15 +128,6 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   const message = error instanceof Error ? error.message : "Unknown error";
   res.status(400).json({ error: message });
 });
-
-function streamUrl(runId: string, caseId: string): string {
-  const base = process.env.ELEVENLABS_TWILIO_WS_URL;
-  if (!base) {
-    throw new Error("ELEVENLABS_TWILIO_WS_URL is required for live Twilio calls.");
-  }
-  const separator = base.includes("?") ? "&" : "?";
-  return `${base}${separator}run_id=${encodeURIComponent(runId)}&case_id=${encodeURIComponent(caseId)}`;
-}
 
 function sampleOutcome(caseId: string) {
   if (caseId === "CASE-A") {

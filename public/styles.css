@@ -536,7 +536,7 @@ small,
 }
 
 .error-banner,
-.inbound-banner {
+.agent-widget-panel {
   display: grid;
   gap: 4px;
   margin-top: 14px;
@@ -550,23 +550,30 @@ small,
   color: var(--red);
 }
 
-.inbound-banner {
+.agent-widget-panel {
+  grid-template-columns: minmax(0, 0.82fr) minmax(280px, 1.18fr);
+  gap: 14px;
+  align-items: center;
   border: 1px solid rgba(32, 114, 77, 0.32);
   background: #f0f8f3;
-  color: var(--green);
 }
 
-.error-banner span,
-.inbound-banner span {
+.agent-widget-panel p {
+  margin-bottom: 0;
+  color: #31453a;
+}
+
+.agent-widget-panel elevenlabs-convai {
+  display: block;
+  min-height: 160px;
+}
+
+.error-banner span {
   overflow-wrap: anywhere;
 }
 
 .error-banner span {
   color: #5d302b;
-}
-
-.inbound-banner span {
-  color: #31453a;
 }
 
 .page {
@@ -826,6 +833,7 @@ pre {
   .live-grid,
   .case-grid,
   .split,
+  .agent-widget-panel,
   .call-screen,
   .use-case-grid,
   .process-track {

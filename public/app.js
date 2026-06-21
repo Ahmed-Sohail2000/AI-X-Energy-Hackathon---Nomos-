@@ -15,10 +15,9 @@ const state = {
   step: "cases",
   activeRunId: null,
   polling: false,
-  pendingCall: false,
-  pendingInbound: false,
+  pendingVoiceAgent: false,
   lastError: null,
-  inboundNumber: null
+  widget: null
 };
 
 const els = {
@@ -101,7 +100,7 @@ function renderMetrics() {
   els.metricCases.textContent = String(state.cases.length);
   els.metricOpen.textContent = String(state.runs.length - completed);
   els.metricCompleted.textContent = String(completed);
-  els.metricMode.textContent = state.runs.some((run) => run.twilio_call_sid) ? "Twilio" : "Mock";
+  els.metricMode.textContent = "ElevenLabs";
 }
 
 function renderSteps() {
@@ -166,10 +165,9 @@ function renderSetup() {
         <h3>Connectors</h3>
         <div class="connector-list">
           ${connector("ElevenLabs", "Voice")}
-          ${connector("Twilio", "Calling")}
-          ${connector("OpenAI", "Reasoning")}
+          ${connector("Web Widget", "Browser call")}
+          ${connector("Agent Prompt", "Reasoning")}
           ${connector("MCP Tools", "Actions")}
-          ${connector("Google Stitch", "Design")}
         </div>
         <div class="actions">
           <button data-copy="${html(item.id)}" type="button">Copy config</button>
@@ -189,14 +187,14 @@ function renderCall() {
   const item = selectedCase();
   const run = activeRun(item.id);
   const isActive = run && !["completed", "failed"].includes(run.status);
-  const agentState = run?.events?.some((event) => event.event_type === "call.connected") ? "stream connected" : "waiting for answer";
-  const twilioStatus = latestTwilioStatus(run) ?? (run?.twilio_call_sid ? "created" : "not started");
-  const inboundPrepared = run?.events?.some((event) => event.event_type === "call.inbound_prepared");
+  const agentState = run?.events?.some((event) => event.event_type === "voice_agent.session_prepared")
+    ? "ready in browser"
+    : "not started";
   els.page.innerHTML = `
     <div class="page-head">
       <div>
         <p class="eyebrow">Step 3</p>
-        <h2>Run call</h2>
+        <h2>Use voice agent</h2>
       </div>
       ${nextButton("Review")}
     </div>
@@ -207,26 +205,18 @@ function renderCall() {
         <p>${html(item.statustext)}</p>
       </div>
       <div class="actions">
-        <button data-start="${html(item.id)}" type="button" ${state.pendingCall ? "disabled" : ""}>${state.pendingCall ? "Starting..." : isActive ? "Restart call" : "Start Twilio call"}</button>
-        <button data-prepare-inbound="${html(item.id)}" type="button" class="secondary" ${state.pendingInbound ? "disabled" : ""}>${state.pendingInbound ? "Preparing..." : "Prepare inbound test"}</button>
+        <button data-start-voice="${html(item.id)}" type="button" ${state.pendingVoiceAgent ? "disabled" : ""}>${state.pendingVoiceAgent ? "Preparing..." : isActive ? "Restart voice agent" : "Use ElevenLabs agent"}</button>
         ${run ? `<button data-refresh-run type="button" class="secondary">Refresh status</button>` : ""}
         ${run ? `<button data-sim="${html(run.run_id)}" class="secondary" type="button">Simulate outcome</button>` : ""}
       </div>
     </section>
-    ${state.lastError ? `<section class="error-banner"><strong>Call failed</strong><span>${html(state.lastError)}</span></section>` : ""}
-    ${
-      inboundPrepared
-        ? `<section class="inbound-banner">
-            <strong>Inbound test ready</strong>
-            <span>Call ${html(state.inboundNumber ?? "your Twilio number")} from your phone. Configure Twilio inbound webhook to ${html(location.origin)}/twilio/inbound.</span>
-          </section>`
-        : ""
-    }
+    ${state.lastError ? `<section class="error-banner"><strong>Agent setup failed</strong><span>${html(state.lastError)}</span></section>` : ""}
+    ${state.widget ? renderAgentWidget() : ""}
     <section class="live-grid">
-      ${liveTile("Twilio call", twilioStatus)}
       ${liveTile("ElevenLabs agent", agentState)}
-      ${liveTile("Call SID", run?.twilio_call_sid ?? "not assigned")}
       ${liveTile("Run ID", run?.run_id ?? "not created")}
+      ${liveTile("Case", item.id)}
+      ${liveTile("Tools", "MCP enabled")}
     </section>
     ${
       run
@@ -243,6 +233,20 @@ function renderCall() {
   bindPageActions();
 }
 
+function renderAgentWidget() {
+  const variables = html(JSON.stringify(state.widget.dynamic_variables));
+  return `
+    <section class="agent-widget-panel">
+      <div>
+        <span class="tag">browser voice session</span>
+        <h3>Talk to the ElevenLabs agent</h3>
+        <p>Use your browser microphone. The selected case and run ID are passed as dynamic variables.</p>
+      </div>
+      <elevenlabs-convai agent-id="${html(state.widget.agent_id)}" dynamic-variables="${variables}"></elevenlabs-convai>
+    </section>
+  `;
+}
+
 function renderReview() {
   els.page.innerHTML = `
     <div class="page-head">
@@ -253,18 +257,13 @@ function renderReview() {
       <button data-step-to="cases" class="secondary" type="button">New case</button>
     </div>
     <div class="run-list">
-      ${
-        state.runs.length
-          ? state.runs.map(runCard).join("")
-          : `<p class="empty">No runs yet.</p>`
-      }
+      ${state.runs.length ? state.runs.map(runCard).join("") : `<p class="empty">No runs yet.</p>`}
     </div>
   `;
   bindPageActions();
 }
 
 function runCard(run) {
-  const twilioStatus = latestTwilioStatus(run);
   return `
     <article class="run-card">
       <div class="case-row">
@@ -272,7 +271,6 @@ function runCard(run) {
         <span class="tag">${html(run.status)}</span>
       </div>
       <p>${html(run.outcome?.backoffice_note_de ?? "Awaiting outcome.")}</p>
-      ${twilioStatus ? `<small>Twilio: ${html(twilioStatus)}</small>` : ""}
       <small>${html(run.run_id)}</small>
     </article>
   `;
@@ -298,50 +296,32 @@ function liveTile(label, value) {
 function eventRows(run) {
   const events = [...(run.events ?? [])].reverse().slice(0, 8);
   if (events.length === 0) {
-    return `<p class="empty">No Twilio or agent events yet.</p>`;
+    return `<p class="empty">No agent events yet.</p>`;
   }
   return events
-    .map((event) => {
-      const payload = eventPayloadSummary(event);
-      return `
+    .map(
+      (event) => `
         <div class="event-row">
           <time>${html(formatTime(event.at))}</time>
           <strong>${html(event.event_type)}</strong>
-          <span>${html(payload)}</span>
+          <span>${html(eventPayloadSummary(event))}</span>
         </div>
-      `;
-    })
+      `
+    )
     .join("");
 }
 
 function eventPayloadSummary(event) {
-  if (event.event_type === "twilio.status") {
-    return latestEventValue(event, "CallStatus") ?? "status callback";
-  }
-  if (event.event_type === "call.connected") {
-    return "Twilio connected to ElevenLabs stream";
-  }
-  if (event.event_type === "call.mock_created") {
-    return "mock run created";
-  }
-  if (event.event_type === "call.inbound_prepared") {
-    return "waiting for inbound phone call";
+  if (event.event_type === "voice_agent.session_prepared") {
+    return "ElevenLabs browser widget prepared";
   }
   if (event.event_type === "case.completed") {
     return "structured outcome saved";
   }
+  if (event.event_type === "case.corrected_malo") {
+    return "corrected MaLo saved";
+  }
   return "agent event recorded";
-}
-
-function latestTwilioStatus(run) {
-  if (!run?.events) return null;
-  const event = [...run.events].reverse().find((item) => item.event_type === "twilio.status");
-  return event ? latestEventValue(event, "CallStatus") : null;
-}
-
-function latestEventValue(event, key) {
-  const value = event?.payload?.[key];
-  return typeof value === "string" ? value : null;
 }
 
 function formatTime(value) {
@@ -373,11 +353,8 @@ function bindPageActions() {
   els.page.querySelectorAll("[data-copy]").forEach((button) => {
     button.addEventListener("click", async () => copyConfig(button.dataset.copy, button));
   });
-  els.page.querySelectorAll("[data-start]").forEach((button) => {
-    button.addEventListener("click", async () => startCall(button.dataset.start));
-  });
-  els.page.querySelectorAll("[data-prepare-inbound]").forEach((button) => {
-    button.addEventListener("click", async () => prepareInbound(button.dataset.prepareInbound));
+  els.page.querySelectorAll("[data-start-voice]").forEach((button) => {
+    button.addEventListener("click", async () => startVoiceAgent(button.dataset.startVoice));
   });
   els.page.querySelectorAll("[data-refresh-run]").forEach((button) => {
     button.addEventListener("click", refreshRuns);
@@ -397,44 +374,27 @@ async function copyConfig(caseId, button) {
   }, 1200);
 }
 
-async function startCall(caseId) {
-  state.pendingCall = true;
+async function startVoiceAgent(caseId) {
+  state.pendingVoiceAgent = true;
   state.lastError = null;
+  state.widget = null;
   render();
   try {
-    const result = await api("/api/calls/start", {
+    const result = await api("/api/voice-agent/session", {
       method: "POST",
       body: JSON.stringify({ case_id: caseId })
     });
     state.runs = await api("/api/runs");
     state.activeRunId = result.run.run_id;
-    els.metricMode.textContent = result.mode === "twilio" ? "Twilio" : "Mock";
+    state.widget = {
+      agent_id: result.agent_id,
+      dynamic_variables: result.dynamic_variables
+    };
     state.step = "call";
   } catch (error) {
-    state.lastError = error instanceof Error ? error.message : "Unknown call error";
+    state.lastError = error instanceof Error ? error.message : "Unknown voice agent error";
   } finally {
-    state.pendingCall = false;
-    render();
-  }
-}
-
-async function prepareInbound(caseId) {
-  state.pendingInbound = true;
-  state.lastError = null;
-  render();
-  try {
-    const result = await api("/api/calls/prepare-inbound", {
-      method: "POST",
-      body: JSON.stringify({ case_id: caseId })
-    });
-    state.runs = await api("/api/runs");
-    state.activeRunId = result.run.run_id;
-    state.inboundNumber = result.call_number;
-    state.step = "call";
-  } catch (error) {
-    state.lastError = error instanceof Error ? error.message : "Unknown inbound setup error";
-  } finally {
-    state.pendingInbound = false;
+    state.pendingVoiceAgent = false;
     render();
   }
 }

@@ -26,7 +26,7 @@
           <p class="eyebrow">Nomos clearing agent</p>
           <h1 id="hero-title">Phone clearing, handled by voice AI.</h1>
           <p>
-            Twilio connects the call. ElevenLabs speaks with the clerk. The agent verifies case data and writes the operational result.
+            ElevenLabs runs directly inside the dashboard. The agent receives case context, verifies the data, and writes the operational result.
           </p>
           <div class="hero-actions">
             <button data-scroll-cases type="button">Use voice agent</button>
@@ -51,7 +51,7 @@
               <div class="flow-line"></div>
               <span class="flow-dot"></span>
               <article class="flow-node node-one"><strong>Case</strong><small>MaLo + meter</small></article>
-              <article class="flow-node node-two"><strong>Twilio</strong><small>phone call</small></article>
+              <article class="flow-node node-two"><strong>Widget</strong><small>browser mic</small></article>
               <article class="flow-node node-three"><strong>ElevenLabs</strong><small>voice agent</small></article>
               <article class="flow-node node-four"><strong>Outcome</strong><small>next step</small></article>
             </div>
@@ -71,7 +71,7 @@
           <p class="eyebrow">Integration flow</p>
           <h2>From stuck case to verified action.</h2>
         </div>
-        <div class="process-track" aria-label="Twilio ElevenLabs process">
+        <div class="process-track" aria-label="ElevenLabs voice agent process">
           <article>
             <span>1</span>
             <strong>Pick case</strong>
@@ -79,8 +79,8 @@
           </article>
           <article>
             <span>2</span>
-            <strong>Connect phone</strong>
-            <p>Twilio handles the call leg.</p>
+            <strong>Open widget</strong>
+            <p>Browser voice starts inside the dashboard.</p>
           </article>
           <article>
             <span>3</span>
@@ -133,8 +133,8 @@
           <h2>Feasible stack, live-call ready.</h2>
         </div>
         <div class="stack-grid">
-          <article><strong>Express + TypeScript</strong><span>API, TwiML, run storage</span></article>
-          <article><strong>Twilio Voice</strong><span>Inbound/outbound call control</span></article>
+          <article><strong>Express + TypeScript</strong><span>API, tools, run storage</span></article>
+          <article><strong>ElevenLabs Widget</strong><span>Embedded browser voice</span></article>
           <article><strong>ElevenLabs</strong><span>German voice agent</span></article>
           <article><strong>MCP-style tools</strong><span>Structured actions</span></article>
         </div>
@@ -182,6 +182,7 @@
       </section>
     </main>
 
+    <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
     <script type="module" src="/app.js"></script>
   </body>
 </html>

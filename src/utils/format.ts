@@ -18,14 +18,3 @@ export function readDigitsDe(value: string): string {
     .map((char) => digitWords[char] ?? char.toUpperCase())
     .join(", ");
 }
-
-export function normalizePhoneNumber(value: string): string {
-  return value.trim().replace(/[^\d+]/g, "");
-}
-
-export function isPracticeNumber(target: string, practiceNumber: string | undefined): boolean {
-  if (!practiceNumber) {
-    return false;
-  }
-  return normalizePhoneNumber(target) === normalizePhoneNumber(practiceNumber);
-}
