@@ -27,6 +27,7 @@ const els = {
   refresh: document.querySelector("#refresh"),
   stepButtons: document.querySelectorAll("[data-step]"),
   scrollConsoleButtons: document.querySelectorAll("[data-scroll-console]"),
+  scrollCasesButtons: document.querySelectorAll("[data-scroll-cases]"),
   landingCaseButtons: document.querySelectorAll("[data-landing-case]"),
   metricCases: document.querySelector("#metric-cases"),
   metricOpen: document.querySelector("#metric-open"),
@@ -477,6 +478,10 @@ els.scrollConsoleButtons.forEach((button) => {
   button.addEventListener("click", scrollToConsole);
 });
 
+els.scrollCasesButtons.forEach((button) => {
+  button.addEventListener("click", scrollToCases);
+});
+
 els.landingCaseButtons.forEach((button) => {
   button.addEventListener("click", () => {
     state.selectedCaseId = button.dataset.landingCase;
@@ -488,6 +493,10 @@ els.landingCaseButtons.forEach((button) => {
 
 function scrollToConsole() {
   document.querySelector("#console")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function scrollToCases() {
+  document.querySelector("#cases")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 load().catch((error) => {

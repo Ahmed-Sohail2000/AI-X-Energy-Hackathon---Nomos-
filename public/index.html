@@ -17,51 +17,51 @@
         <a href="#cases">Cases</a>
         <a href="#console">Console</a>
       </nav>
-      <button data-scroll-console class="quiet" type="button">Open console</button>
+      <button data-scroll-cases class="quiet" type="button">Use agent</button>
     </header>
 
     <main id="top">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="eyebrow">AI-native clearing calls</p>
-          <h1 id="hero-title">Twilio call. ElevenLabs agent. Structured energy-market result.</h1>
+          <p class="eyebrow">Nomos clearing agent</p>
+          <h1 id="hero-title">Phone clearing, handled by voice AI.</h1>
           <p>
-            A German voice agent handles IVR, verifies MaLo data, captures the reason, and writes the next action.
+            Twilio connects the call. ElevenLabs speaks with the clerk. The agent verifies case data and writes the operational result.
           </p>
           <div class="hero-actions">
-            <button data-scroll-console type="button">Run a case</button>
-            <a href="/twilio-elevenlabs-workflow.svg" target="_blank" rel="noreferrer">Open diagram</a>
+            <button data-scroll-cases type="button">Use voice agent</button>
+            <button data-scroll-console class="secondary" type="button">Open console</button>
+          </div>
+          <div class="hero-proof" aria-label="Capabilities">
+            <span>German voice</span>
+            <span>IVR keypad</span>
+            <span>Digit readback</span>
+            <span>MCP actions</span>
           </div>
         </div>
-        <div class="hero-visual" aria-label="Live workflow preview">
-          <div class="signal-strip">
-            <span>Dashboard</span>
-            <span>Express</span>
-            <span>Twilio</span>
-            <span>ElevenLabs</span>
-            <span>MCP</span>
-          </div>
-          <div class="call-map">
-            <article>
-              <strong>Start</strong>
-              <span>select case</span>
-            </article>
-            <article>
-              <strong>Dial</strong>
-              <span>practice number</span>
-            </article>
-            <article>
-              <strong>Stream</strong>
-              <span>voice agent</span>
-            </article>
-            <article>
-              <strong>Clear</strong>
-              <span>JSON outcome</span>
-            </article>
-          </div>
-          <div class="voice-panel">
-            <span>Agent quality</span>
-            <strong>German, concise, digit-by-digit readback, human-grade turn taking.</strong>
+
+        <div class="hero-visual" aria-label="Voice agent workflow preview">
+          <div class="agent-screen">
+            <div class="agent-topbar">
+              <span></span>
+              <strong>Live call path</strong>
+              <em>ready</em>
+            </div>
+            <div class="workflow-orbit" aria-hidden="true">
+              <div class="flow-line"></div>
+              <span class="flow-dot"></span>
+              <article class="flow-node node-one"><strong>Case</strong><small>MaLo + meter</small></article>
+              <article class="flow-node node-two"><strong>Twilio</strong><small>phone call</small></article>
+              <article class="flow-node node-three"><strong>ElevenLabs</strong><small>voice agent</small></article>
+              <article class="flow-node node-four"><strong>Outcome</strong><small>next step</small></article>
+            </div>
+            <div class="voice-wave" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="agent-result">
+              <span>Verified</span>
+              <strong>Reason captured. Next action saved.</strong>
+            </div>
           </div>
         </div>
       </section>
@@ -69,61 +69,60 @@
       <section id="flow" class="section">
         <div class="section-head">
           <p class="eyebrow">Integration flow</p>
-          <h2>One call path, no hidden handoff.</h2>
+          <h2>From stuck case to verified action.</h2>
         </div>
-        <div class="process-grid" aria-label="Twilio ElevenLabs process">
+        <div class="process-track" aria-label="Twilio ElevenLabs process">
           <article>
-            <span>01</span>
-            <strong>Dashboard</strong>
-            <p>Creates a run and sends the selected case to the backend.</p>
+            <span>1</span>
+            <strong>Pick case</strong>
+            <p>Fixture data becomes call context.</p>
           </article>
           <article>
-            <span>02</span>
-            <strong>Twilio</strong>
-            <p>Dials the practice clerk number with the configured caller ID.</p>
+            <span>2</span>
+            <strong>Connect phone</strong>
+            <p>Twilio handles the call leg.</p>
           </article>
           <article>
-            <span>03</span>
-            <strong>TwiML stream</strong>
-            <p>Your app returns Connect Stream with run and case parameters.</p>
+            <span>3</span>
+            <strong>Speak</strong>
+            <p>ElevenLabs handles the German conversation.</p>
           </article>
           <article>
-            <span>04</span>
-            <strong>ElevenLabs</strong>
-            <p>The voice agent handles IVR, speaks German, and verifies details.</p>
+            <span>4</span>
+            <strong>Verify</strong>
+            <p>MaLo, address, meter, reason, next step.</p>
           </article>
           <article>
-            <span>05</span>
-            <strong>MCP tools</strong>
-            <p>Outcome, corrected MaLo, and next action are saved.</p>
+            <span>5</span>
+            <strong>Act</strong>
+            <p>Structured outcome and follow-up action.</p>
           </article>
         </div>
-      </section>
-
-      <section class="section diagram-section" aria-label="Full integration diagram">
-        <img src="/twilio-elevenlabs-workflow.svg" alt="Twilio outbound call to ElevenLabs voice agent workflow" />
       </section>
 
       <section id="cases" class="section">
         <div class="section-head">
           <p class="eyebrow">Use cases</p>
-          <h2>Three clearing patterns.</h2>
+          <h2>Choose a live test.</h2>
         </div>
         <div class="use-case-grid">
           <button data-landing-case="CASE-A" type="button">
             <span>CASE-A</span>
             <strong>Registration bounced</strong>
-            <small>Find real reason and next step.</small>
+            <small>Discover why the MaLo is dead.</small>
+            <em>Prepare</em>
           </button>
           <button data-landing-case="CASE-B" type="button">
             <span>CASE-B</span>
             <strong>Silent registration</strong>
-            <small>Confirm processing and reference number.</small>
+            <small>Confirm processing and reference.</small>
+            <em>Prepare</em>
           </button>
           <button data-landing-case="CASE-C" type="button">
             <span>CASE-C</span>
             <strong>Wrong MaLo</strong>
-            <small>Get corrected MaLo and read it back.</small>
+            <small>Get corrected MaLo and readback.</small>
+            <em>Prepare</em>
           </button>
         </div>
       </section>
@@ -131,13 +130,13 @@
       <section class="section stack-section">
         <div class="section-head">
           <p class="eyebrow">MVP stack</p>
-          <h2>Lean stack for live calls.</h2>
+          <h2>Feasible stack, live-call ready.</h2>
         </div>
         <div class="stack-grid">
           <article><strong>Express + TypeScript</strong><span>API, TwiML, run storage</span></article>
-          <article><strong>Twilio Voice</strong><span>Outbound dial and status callbacks</span></article>
-          <article><strong>ElevenLabs</strong><span>German voice agent and call reasoning</span></article>
-          <article><strong>MCP-style tools</strong><span>Structured actions and outcome JSON</span></article>
+          <article><strong>Twilio Voice</strong><span>Inbound/outbound call control</span></article>
+          <article><strong>ElevenLabs</strong><span>German voice agent</span></article>
+          <article><strong>MCP-style tools</strong><span>Structured actions</span></article>
         </div>
       </section>
 
