@@ -14,7 +14,9 @@ const state = {
   selectedCaseId: null,
   step: "cases",
   activeRunId: null,
-  polling: false
+  polling: false,
+  pendingCall: false,
+  lastError: null
 };
 
 const els = {
@@ -35,7 +37,15 @@ async function api(path, options) {
     headers: { "Content-Type": "application/json" },
     ...options
   });
-  if (!response.ok) throw new Error(await response.text());
+  if (!response.ok) {
+    let message = await response.text();
+    try {
+      message = JSON.parse(message).error ?? message;
+    } catch {
+      // Keep raw response text when it is not JSON.
+    }
+    throw new Error(message);
+  }
   return response.json();
 }
 
@@ -71,6 +81,9 @@ async function load() {
 }
 
 function render() {
+  if (state.step !== "call") {
+    state.lastError = null;
+  }
   renderMetrics();
   renderSteps();
   if (state.step === "cases") renderCases();
@@ -190,11 +203,12 @@ function renderCall() {
         <p>${html(item.statustext)}</p>
       </div>
       <div class="actions">
-        <button data-start="${html(item.id)}" type="button">${isActive ? "Restart call" : "Start Twilio call"}</button>
+        <button data-start="${html(item.id)}" type="button" ${state.pendingCall ? "disabled" : ""}>${state.pendingCall ? "Starting..." : isActive ? "Restart call" : "Start Twilio call"}</button>
         ${run ? `<button data-refresh-run type="button" class="secondary">Refresh status</button>` : ""}
         ${run ? `<button data-sim="${html(run.run_id)}" class="secondary" type="button">Simulate outcome</button>` : ""}
       </div>
     </section>
+    ${state.lastError ? `<section class="error-banner"><strong>Call failed</strong><span>${html(state.lastError)}</span></section>` : ""}
     <section class="live-grid">
       ${liveTile("Twilio call", twilioStatus)}
       ${liveTile("ElevenLabs agent", agentState)}
@@ -365,15 +379,24 @@ async function copyConfig(caseId, button) {
 }
 
 async function startCall(caseId) {
-  const result = await api("/api/calls/start", {
-    method: "POST",
-    body: JSON.stringify({ case_id: caseId })
-  });
-  state.runs = await api("/api/runs");
-  state.activeRunId = result.run.run_id;
-  els.metricMode.textContent = result.mode === "twilio" ? "Twilio" : "Mock";
-  state.step = "call";
+  state.pendingCall = true;
+  state.lastError = null;
   render();
+  try {
+    const result = await api("/api/calls/start", {
+      method: "POST",
+      body: JSON.stringify({ case_id: caseId })
+    });
+    state.runs = await api("/api/runs");
+    state.activeRunId = result.run.run_id;
+    els.metricMode.textContent = result.mode === "twilio" ? "Twilio" : "Mock";
+    state.step = "call";
+  } catch (error) {
+    state.lastError = error instanceof Error ? error.message : "Unknown call error";
+  } finally {
+    state.pendingCall = false;
+    render();
+  }
 }
 
 async function simulate(runId) {
