@@ -51,6 +51,15 @@ export async function listRuns(): Promise<RunRecord[]> {
   return runs.sort((a, b) => b.started_at.localeCompare(a.started_at));
 }
 
+export async function latestPendingInboundRun(): Promise<RunRecord | undefined> {
+  const runs = await listRuns();
+  return runs.find(
+    (run) =>
+      run.status === "queued" &&
+      run.events.some((event) => event.event_type === "call.inbound_prepared")
+  );
+}
+
 export async function appendEvent(runId: string, event: Omit<CallEvent, "at">): Promise<RunRecord> {
   const run = await readRun(runId);
   run.events.push({ at: new Date().toISOString(), ...event });

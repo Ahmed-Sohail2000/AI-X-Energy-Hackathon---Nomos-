@@ -16,7 +16,9 @@ const state = {
   activeRunId: null,
   polling: false,
   pendingCall: false,
-  lastError: null
+  pendingInbound: false,
+  lastError: null,
+  inboundNumber: null
 };
 
 const els = {
@@ -188,6 +190,7 @@ function renderCall() {
   const isActive = run && !["completed", "failed"].includes(run.status);
   const agentState = run?.events?.some((event) => event.event_type === "call.connected") ? "stream connected" : "waiting for answer";
   const twilioStatus = latestTwilioStatus(run) ?? (run?.twilio_call_sid ? "created" : "not started");
+  const inboundPrepared = run?.events?.some((event) => event.event_type === "call.inbound_prepared");
   els.page.innerHTML = `
     <div class="page-head">
       <div>
@@ -204,11 +207,20 @@ function renderCall() {
       </div>
       <div class="actions">
         <button data-start="${html(item.id)}" type="button" ${state.pendingCall ? "disabled" : ""}>${state.pendingCall ? "Starting..." : isActive ? "Restart call" : "Start Twilio call"}</button>
+        <button data-prepare-inbound="${html(item.id)}" type="button" class="secondary" ${state.pendingInbound ? "disabled" : ""}>${state.pendingInbound ? "Preparing..." : "Prepare inbound test"}</button>
         ${run ? `<button data-refresh-run type="button" class="secondary">Refresh status</button>` : ""}
         ${run ? `<button data-sim="${html(run.run_id)}" class="secondary" type="button">Simulate outcome</button>` : ""}
       </div>
     </section>
     ${state.lastError ? `<section class="error-banner"><strong>Call failed</strong><span>${html(state.lastError)}</span></section>` : ""}
+    ${
+      inboundPrepared
+        ? `<section class="inbound-banner">
+            <strong>Inbound test ready</strong>
+            <span>Call ${html(state.inboundNumber ?? "your Twilio number")} from your phone. Configure Twilio inbound webhook to ${html(location.origin)}/twilio/inbound.</span>
+          </section>`
+        : ""
+    }
     <section class="live-grid">
       ${liveTile("Twilio call", twilioStatus)}
       ${liveTile("ElevenLabs agent", agentState)}
@@ -311,6 +323,9 @@ function eventPayloadSummary(event) {
   if (event.event_type === "call.mock_created") {
     return "mock run created";
   }
+  if (event.event_type === "call.inbound_prepared") {
+    return "waiting for inbound phone call";
+  }
   if (event.event_type === "case.completed") {
     return "structured outcome saved";
   }
@@ -360,6 +375,9 @@ function bindPageActions() {
   els.page.querySelectorAll("[data-start]").forEach((button) => {
     button.addEventListener("click", async () => startCall(button.dataset.start));
   });
+  els.page.querySelectorAll("[data-prepare-inbound]").forEach((button) => {
+    button.addEventListener("click", async () => prepareInbound(button.dataset.prepareInbound));
+  });
   els.page.querySelectorAll("[data-refresh-run]").forEach((button) => {
     button.addEventListener("click", refreshRuns);
   });
@@ -395,6 +413,27 @@ async function startCall(caseId) {
     state.lastError = error instanceof Error ? error.message : "Unknown call error";
   } finally {
     state.pendingCall = false;
+    render();
+  }
+}
+
+async function prepareInbound(caseId) {
+  state.pendingInbound = true;
+  state.lastError = null;
+  render();
+  try {
+    const result = await api("/api/calls/prepare-inbound", {
+      method: "POST",
+      body: JSON.stringify({ case_id: caseId })
+    });
+    state.runs = await api("/api/runs");
+    state.activeRunId = result.run.run_id;
+    state.inboundNumber = result.call_number;
+    state.step = "call";
+  } catch (error) {
+    state.lastError = error instanceof Error ? error.message : "Unknown inbound setup error";
+  } finally {
+    state.pendingInbound = false;
     render();
   }
 }

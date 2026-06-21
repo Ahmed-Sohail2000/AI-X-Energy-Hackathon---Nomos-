@@ -11,7 +11,14 @@ import {
   buildElevenLabsSkills
 } from "./agentPrompt.js";
 import { callTool, toolDefinitions } from "./mcpTools.js";
-import { appendEvent, attachTwilioSid, createRun, listRuns, readRun } from "./storage.js";
+import {
+  appendEvent,
+  attachTwilioSid,
+  createRun,
+  latestPendingInboundRun,
+  listRuns,
+  readRun
+} from "./storage.js";
 import { startOutboundCall } from "./twilioClient.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -72,6 +79,25 @@ app.post("/api/calls/start", async (req, res, next) => {
     const sid = await startOutboundCall({ caseFile, runId: run.run_id, to: target });
     const updated = await attachTwilioSid(run.run_id, sid);
     res.json({ mode: "twilio", run: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/calls/prepare-inbound", async (req, res, next) => {
+  try {
+    const body = z.object({ case_id: z.string() }).parse(req.body);
+    const caseFile = getCase(body.case_id);
+    const run = await createRun(caseFile.id);
+    const updated = await appendEvent(run.run_id, {
+      event_type: "call.inbound_prepared",
+      payload: {
+        case_id: caseFile.id,
+        twilio_number: process.env.TWILIO_FROM_NUMBER ?? "not configured",
+        next_step: "Call the Twilio number from your phone. Twilio will connect this prepared run to ElevenLabs."
+      }
+    });
+    res.json({ mode: "inbound", run: updated, call_number: process.env.TWILIO_FROM_NUMBER ?? null });
   } catch (error) {
     next(error);
   }
@@ -141,6 +167,43 @@ app.post("/twilio/voice", async (req, res, next) => {
   </Connect>
 </Response>`;
     res.type("text/xml").send(response);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/twilio/inbound", async (req, res, next) => {
+  try {
+    const run = await latestPendingInboundRun();
+    if (!run) {
+      res.type("text/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say language="de-DE">Kein vorbereiteter Nomos Testlauf gefunden. Bitte zuerst im Dashboard einen Inbound Test vorbereiten.</Say>
+  <Hangup />
+</Response>`);
+      return;
+    }
+
+    const caseFile = getCase(run.case_id);
+    if (typeof req.body.CallSid === "string") {
+      await attachTwilioSid(run.run_id, req.body.CallSid);
+    }
+    await appendEvent(run.run_id, {
+      event_type: "call.connected",
+      payload: { case_id: caseFile.id, direction: "inbound", twilio_body: req.body }
+    });
+
+    res.type("text/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say language="de-DE">Nomos Klaerfall Agent wird verbunden.</Say>
+  <Connect>
+    <Stream url="${streamUrl(run.run_id, caseFile.id)}">
+      <Parameter name="run_id" value="${run.run_id}" />
+      <Parameter name="case_id" value="${caseFile.id}" />
+      <Parameter name="call_direction" value="inbound" />
+    </Stream>
+  </Connect>
+</Response>`);
   } catch (error) {
     next(error);
   }

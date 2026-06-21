@@ -423,20 +423,35 @@ small,
   margin-top: 14px;
 }
 
-.error-banner {
+.error-banner,
+.inbound-banner {
   display: grid;
   gap: 4px;
   margin-top: 14px;
   padding: 12px;
-  border: 1px solid rgba(159, 63, 55, 0.32);
   border-radius: 8px;
+}
+
+.error-banner {
+  border: 1px solid rgba(159, 63, 55, 0.32);
   background: #fff4f2;
   color: var(--red);
 }
 
-.error-banner span {
+.inbound-banner {
+  border: 1px solid rgba(35, 113, 79, 0.32);
+  background: #f0f8f3;
+  color: var(--green);
+}
+
+.error-banner span,
+.inbound-banner span {
   overflow-wrap: anywhere;
   color: #5d302b;
+}
+
+.inbound-banner span {
+  color: #31453a;
 }
 
 .live-grid article {
